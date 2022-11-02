@@ -21,27 +21,27 @@ namespace mpl
             void detach(Window<T> win, const T &data);
             
             //communication
-            void put(const T &data, int dest, Window<T> win);
-            void get(const T &data, int dest, Window<T> win);
-            template<typename T, typename F> void accumulate(const T &data, int dest, F op, Window<T> win);
-            template<typename T, typename F> void get_accumulate(const T &data, const T &result, int dest, F op, Window<T> win);
-            template<typename T, typename F> void fetch_and_op(const T &data, const T &result, int dest, F op, Window<T> win);
-            void compare_and_swap(const T &data, const T &compare, const T &result, int dest, Window<T> win);
-            impl::irequest rput(const T &data, int dest, Window<T> win);
-            impl::irequest rget(const T &data, int dest, Window<T> win);
-            template<typename T, typename F> impl::irequest racc(const T &data, int dest, F op, Window<T> win);
-            template<typename T, typename F> impl::irequest rget_acc(const T &data, const T &result, int dest, F op, Window<T> win);
+            void put(const T &data, int dest, const T &win);
+            void get(const T &data, int dest, const T &win);
+            template<typename T, typename F> void accumulate(const T &data, int dest, F op, const T &win);
+            template<typename T, typename F> void get_accumulate(const T &data, const T &result, int dest, F op, const T &win);
+            template<typename T, typename F> void fetch_and_op(const T &data, const T &result, int dest, F op, const T &win);
+            void compare_and_swap(const T &data, const T &compare, const T &result, int dest, const T &win);
+            impl::irequest rput(const T &data, int dest, const T &win);
+            impl::irequest rget(const T &data, int dest, const T &win);
+            template<typename T, typename F> impl::irequest racc(const T &data, int dest, F op, const T &win);
+            template<typename T, typename F> impl::irequest rget_acc(const T &data, const T &result, int dest, F op, const T &win);
 
             //synchronization
-            void flush(int dest, Window<T> win);
-            void flush_all(Window<T> win);
-            void flush_local(int dest, Window<T> win);
-            void flush_local_all(Window<T> win);
-            void fence(int assert, Window<T> win);
-            void lock(int lock_type, int dest, int assert, Window<T> win);
-            void lock_all(int assert, Window<T> win);
-            void unlock(int dest, Window<T> win);
-            void unlock_all(Window<T> win);
+            void flush(int dest, const T &win);
+            void flush_all(const T &win);
+            void flush_local(int dest, const T &win);
+            void flush_local_all(const T &win);
+            void fence(int assert, const T &win);
+            void lock(int lock_type, int dest, int assert, const T &win);
+            void lock_all(int assert, const T &win);
+            void unlock(int dest, const T &win);
+            void unlock_all(const T &win);
         private:
             int win_static(const T &data, int size, MPI_Info info, MPI_Comm comm);                                                  // overloaded! win create
             int win_static(int size, MPI_Info info, MPI_Comm comm, void* baseptr, int share_flag);                                  // overloaded! win allocate & allocate shared                                           
@@ -100,151 +100,151 @@ namespace mpl
     }
 
     template<class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::attach(Window<T> win, const T &data, int size)
+    void Window<T, mode, share_flag>::attach(const T &win, const T &data, int size)
     {
-        MPI_Win_attach(win, &data, size);
+        MPI_Win_attach(&win, &data, size);
     }
 
     template<class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::detach(Window<T> win, const T &data)
+    void Window<T, mode, share_flag>::detach(const T &win, const T &data)
     {
-        MPI_Win_detach(win, &data);
+        MPI_Win_detach(&win, &data);
     }
 
     // communication
 
     template<class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::put(const T &data, int dest, Window<T> win)
+    void Window<T, mode, share_flag>::put(const T &data, int dest, const T &win)
     {
         int disp = sizeof(detail::datatype_traits<T>::get_datatype(&data));
-        MPI_Put(&data, 1, T, dest, disp, 1, T, win);
+        MPI_Put(&data, 1, T, dest, disp, 1, T, &win);
     }
 
     template <class T, int mode, int share_flag>
-    impl::irequest Window<T, mode, share_flag>::rput(const T &data, int dest, Window<T> win)
+    impl::irequest Window<T, mode, share_flag>::rput(const T &data, int dest, const T &win)
     {
         MPI_Request req;
         int disp = sizeof(detail::datatype_traits<T>::get_datatype(&data));
-        MPI_Rput(&data, 1, T, dest, disp, 1, T, win, &req);
+        MPI_Rput(&data, 1, T, dest, disp, 1, T, &win, &req);
         return impl::irequest(req);
     }
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::get(const T &data, int dest, Window<T> win)
+    void Window<T, mode, share_flag>::get(const T &data, int dest, const T &win)
     {
         int disp = sizeof(detail::datatype_traits<T>::get_datatype(&data));
-        MPI_Get(&data, 1, T, dest, disp, 1, T, win);
+        MPI_Get(&data, 1, T, dest, disp, 1, T, &win);
     }
 
     template <class T, int mode, int share_flag>
-    impl::irequest Window<T, mode, share_flag>::rget(const T &data, int dest, Window<T> win)
+    impl::irequest Window<T, mode, share_flag>::rget(const T &data, int dest, const T &win)
     {
         MPI_Request req;
         int disp = sizeof(detail::datatype_traits<T>::get_datatype(&data));
-        MPI_Rget(&data, 1, T, dest, disp, 1, T, win, &req);
+        MPI_Rget(&data, 1, T, dest, disp, 1, T, &win, &req);
         return impl::irequest(req);
     }
 
     template <typename T, typename F>
-    void accumulate(const T &data, int dest, F op, Window<T> win)
+    void accumulate(const T &data, int dest, F op, const T &win)
     {
         int disp = sizeof(detail::datatype_traits<T>::get_datatype(&data));
-        MPI_Accumulate(&data, 1, T, dest, disp, 1, T, detail::get_op<T, F>(f).mpi_op, win);
+        MPI_Accumulate(&data, 1, T, dest, disp, 1, T, detail::get_op<T, F>(f).mpi_op, &win);
     }
 
     template <typename T, typename F>
-    impl::irequest racc(const T &data, int dest, F op, Window<T> win)
+    impl::irequest racc(const T &data, int dest, F op, const T &win)
     {
         MPI_Request req;
         int disp = sizeof(detail::datatype_traits<T>::get_datatype(&data));
-        MPI_Raccumulate(&data, 1, T, dest, disp, 1, T, detail::get_op<T, F>(f).mpi_op, win, &req);
+        MPI_Raccumulate(&data, 1, T, dest, disp, 1, T, detail::get_op<T, F>(f).mpi_op, &win, &req);
         return impl::irequest(req);
     }
 
     template <typename T, typename F>
-    void get_accumulate(const T &data, const T &result, int dest, F op, Window<T> win)
+    void get_accumulate(const T &data, const T &result, int dest, F op, const T &win)
     {
         int disp = sizeof(detail::datatype_traits<T>::get_datatype(&data));
-        MPI_Get_accumulate(&data, 1, T, &result, 1, T, dest, disp, 1, T, detail::get_op<T, F>(f).mpi_op, win);
+        MPI_Get_accumulate(&data, 1, T, &result, 1, T, dest, disp, 1, T, detail::get_op<T, F>(f).mpi_op, &win);
     }
 
     template <typename T, typename F>
-    impl::irequest rget_acc(const T &data, const T &result, int dest, F op, Window<T> win)
+    impl::irequest rget_acc(const T &data, const T &result, int dest, F op, const T &win)
     {
         MPI_Request req;
         int disp = sizeof(detail::datatype_traits<T>::get_datatype(&data));
-        MPI_Rget_accumulate(&data, 1, T, &result, 1, T, dest, disp, 1, T, detail::get_op<T, F>(f).mpi_op, win, &req);
+        MPI_Rget_accumulate(&data, 1, T, &result, 1, T, dest, disp, 1, T, detail::get_op<T, F>(f).mpi_op, &win, &req);
         return impl::irequest(req);
     }
 
     template <typename T, typename F>
-    void fetch_and_op(const T &data, const T &result, int dest, F op, Window<T> win)
+    void fetch_and_op(const T &data, const T &result, int dest, F op, const T &win)
     {
         int disp = sizeof(detail::datatype_traits<T>::get_datatype(&data));
-        MPI_Fetch_and_op(&data, &result, T, dest, disp, detail::get_op<T, F>(f).mpi_op, win);
+        MPI_Fetch_and_op(&data, &result, T, dest, disp, detail::get_op<T, F>(f).mpi_op, &win);
     }
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::compare_and_swap(const T &data, const T &compare, const T &result, int dest, Window<T> win)
+    void Window<T, mode, share_flag>::compare_and_swap(const T &data, const T &compare, const T &result, int dest, const T &win)
     {
         int disp = sizeof(detail::datatype_traits<T>::get_datatype(&data));
-        MPI_Compare_and_swap(&data, &compare, &result, T, dest, disp, win);
+        MPI_Compare_and_swap(&data, &compare, &result, T, dest, disp, &win);
     }
     
     // synchronization
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::flush(int dest, Window<T> win)
+    void Window<T, mode, share_flag>::flush(int dest, const T &win)
     {
-        MPI_Win_flush(dest, win)
+        MPI_Win_flush(dest, &win)
     }
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::flush_all(Window<T> win)
+    void Window<T, mode, share_flag>::flush_all(const T &win)
     {
-        MPI_Win_flush_all(win)
+        MPI_Win_flush_all(&win)
     }
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::flush_local(int dest, Window<T> win)
+    void Window<T, mode, share_flag>::flush_local(int dest, const T &win)
     {
-        MPI_Win_flush_local(dest, win)
+        MPI_Win_flush_local(dest, &win)
     }
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::flush_local_all(Window<T> win)
+    void Window<T, mode, share_flag>::flush_local_all(const T &win)
     {
-        MPI_Win_flush_local_all(win)
+        MPI_Win_flush_local_all(&win)
     }
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::fence(int assert, Window<T> win)
+    void Window<T, mode, share_flag>::fence(int assert, const T &win)
     {
-        MPI_Win_fence(assert, win)
+        MPI_Win_fence(assert, &win)
     }
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::lock(int lock_type, int dest, int assert, Window<T> win)
+    void Window<T, mode, share_flag>::lock(int lock_type, int dest, int assert, const T &win)
     {
-        MPI_Win_lock(lock_type, dest, assert, win)
+        MPI_Win_lock(lock_type, dest, assert, &win)
     }
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::lock_all(int assert, Window<T> win)
+    void Window<T, mode, share_flag>::lock_all(int assert, const T &win)
     {
-        MPI_Win_lock_all(assert, win)
+        MPI_Win_lock_all(assert, &win)
     }
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::unlock(int dest, Window<T> win)
+    void Window<T, mode, share_flag>::unlock(int dest, const T &win)
     {
-        MPI_Win_unlock(dest, win)
+        MPI_Win_unlock(dest, &win)
     }
 
     template <class T, int mode, int share_flag>
-    void Window<T, mode, share_flag>::unlock_all(Window<T> win)
+    void Window<T, mode, share_flag>::unlock_all(const T &win)
     {
-        MPI_Win_unlock_all(win)
+        MPI_Win_unlock_all(&win)
     }
 
     class RMA
