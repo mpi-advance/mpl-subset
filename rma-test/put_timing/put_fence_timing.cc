@@ -14,20 +14,16 @@ using namespace std;
 #endif
 
 int main(int argc, char* argv[])
-{
-    MPI_Init(&argc, &argv);
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);    
+{   
+    const mpl::communicator &comm_world(mpl::environment::comm_world());
     MPI_Win win;
-    MPI_Group grp;
-    MPI_Comm_group(MPI_COMM_WORLD, &grp);
 
     //window addresses
     vector<int> vec1(1000, 0);
     vector<int> vec2(1000, 1);   
 
     //timing 
-    	double start;
+    double start;
     double end;
     double time;
     double total;
@@ -38,17 +34,17 @@ int main(int argc, char* argv[])
     double combinedavg;
     double combinedbw;
 
-    if(rank == 0)
+    if(comm_world.rank() == 0)
     {      
         MPI_Win_create(vec1.data(), vec1.size() * sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
     }
-    else if (rank == 1)
+    else if (comm_world.rank() == 1)
     {
         MPI_Win_create(vec2.data(), vec2.size() * sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
     }
 
     #ifdef DEBUG
-    if(rank == 0)
+    if(comm_world.rank() == 0)
     {      
         cout << "Vector 1: [ ";
         for (int i = 0; i < 2; i++)
@@ -57,7 +53,7 @@ int main(int argc, char* argv[])
         }
         cout << "]" << endl;
     }
-    else if (rank == 1)
+    else if (comm_world.rank() == 1)
     {
         cout << "Vector 2: [ ";
         for (int i = 0; i < 2; i++)
@@ -68,29 +64,29 @@ int main(int argc, char* argv[])
     }
     #endif
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    comm_world.barrier();
 
     for (int i=0; i < NITERS; i++)
     {
-        if(rank < SKIP)
+        if(comm_world.rank() < SKIP)
         {
-            start = MPI_Wtime();
+            start = wtime();
         }
 
-        MPI_Win_fence(MPI_MODE_NOPRECEDE, win);
+        fence(MPI_MODE_NOPRECEDE, win);
 
-        if(rank == 1)
+        if(comm_world.rank() == 1)
         {
-            MPI_Put(vec2.data(), 1, MPI_INT, 0, i, 1, MPI_INT, win);
+            put(vec2.data(), 0, win);
         }
 
-        MPI_Win_fence(MPI_MODE_NOSUCCEED, win);        
+        fence(MPI_MODE_NOSUCCEED, win);        
     }
 
-    end = MPI_Wtime();
+    end = wtime();
 
     #ifdef DEBUG
-    if (rank == 0)
+    if (comm_world.rank() == 0)
     {
         cout << "Vector 1 after put: [ ";
         for (int i = 0; i < 2; i++)
@@ -110,15 +106,17 @@ int main(int argc, char* argv[])
 	double tmp = msg_size / 1e6 * win_size;
 	bw = tmp / avg; 
 
-	MPI_Reduce(&avg, &combinedavg, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&bw, &combinedbw, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	//MPI_Reduce(&avg, &combinedavg, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    // maybe this is correct? need to check what param F should be
+    comm_world.reduce(MPI_DOUBLE, 0, &avg, &combinedavg);
+    // MPI_Reduce(&bw, &combinedbw, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    comm_world.reduce(MPI_DOUBLE, 0, &bw, &combinedbw);
 
-    if (rank == 0)
+    if (comm_world.rank() == 0)
     {
         cout <<"Average time taken by one process (ms): " << combinedavg * 1000 << endl;
         cout << "Average bandwidth: " << (combinedbw / 2) << endl;
     } 
 
     MPI_Win_free(&win);
-    MPI_Finalize();
 }
