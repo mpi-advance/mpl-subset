@@ -16,7 +16,7 @@ namespace mpl
     {
         public: 
             // window
-            int win(int size, MPI_Info info, MPI_Comm comm, void* baseptr, T* base);     //comm must be correct remember                          // selector
+            int win(int size, MPI_Info info, MPI_Comm comm, void* baseptr, T* base);     //passed comm must be correct (same as used to create communicator)   // selector
             void attach(Window<T> win, const T &data, int size);
             void detach(Window<T> win, const T &data);
             
