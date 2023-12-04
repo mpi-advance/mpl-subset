@@ -258,6 +258,11 @@ namespace mpl
             
     };
 
+    #ifdef KOKKOS_ENABLED
+
+    #include <Kokkos_Core.hpp>
+    #include <kokkos.hpp>
+
     template <class T, class U>
     class External
     {
@@ -505,5 +510,7 @@ namespace mpl
     {
         MPI_Win_unlock_all(&win)
     }
+
+    #endif
 
 }
